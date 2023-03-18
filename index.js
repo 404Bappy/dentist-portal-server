@@ -30,6 +30,11 @@ async function run() {
             const options = await appointmentOptionCollection.find(query).toArray();
             const bookingQuery = { appointmentDate: date }
             const alreadyBooked = await bookingsCollection.find(bookingQuery).toArray();
+            options.forEach(option => {
+                const optionBooked = alreadyBooked.filter(book => book.treatment === option.name);
+                const bookedSlots = optionBooked.map(book => book.slot)
+                console.log(option.name, bookedSlots);
+            })
             res.send(options);
         });
 
