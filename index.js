@@ -45,6 +45,11 @@ async function run() {
         const usersCollection = client.db('dentistPortal').collection('users');
         const doctorsCollection = client.db('dentistPortal').collection('doctors');
 
+        // NOTE: make sure you use verifyAdmin after verifyJWT
+        const verifyAdmin = async (req, res, next) => {
+            console.log('Inside Verify Aadmin', req.decoded.email);
+        }
+
 
         //Use Aggregate to query multiple collection and then merge data
         app.get('/appointmentOptions', async (req, res) => {
@@ -138,8 +143,6 @@ async function run() {
             if (email !== decodedEmail) {
                 return res.status(403).send({ message: 'forbidden access' });
             }
-
-
             const query = { email: email };
             const bookings = await bookingsCollection.find(query).toArray();
             res.send(bookings);
@@ -204,9 +207,9 @@ async function run() {
             const decodedEmail = req.decoded.email;
             const query = { email: decodedEmail };
             const user = await usersCollection.findOne(query);
-            
+
             if (user?.role !== 'admin') {
-                res.status(403).send({ message: 'forbidden access' })
+                return res.status(403).send({ message: 'forbidden access' })
             }
 
             const id = req.params.id;
@@ -221,19 +224,33 @@ async function run() {
             res.send(result);
         });
 
-        app.get('/doctors', verifyJWT, async (req, res) => {
+        // Temporary to update price field on appointment options
+        // app.get('/addPrice', async (req, res) => {
+        //     const filter = {}
+        //     const options = { upsert: true }
+        //     const updatedDoc = {
+        //         $set: {
+        //             price: 99
+        //         }
+        //     }
+        //     const result = await appointmentOptionCollection.updateMany(filter, updatedDoc, options);
+        //     res.send(result);
+        // })
+
+
+        app.get('/doctors', async (req, res) => {
             const query = {};
             const doctors = await doctorsCollection.find(query).toArray();
             res.send(doctors);
         })
 
-        app.post('/doctors', verifyJWT, async (req, res) => {
+        app.post('/doctors', async (req, res) => {
             const doctor = req.body;
             const result = await doctorsCollection.insertOne(doctor);
             res.send(result);
         });
 
-        app.delete('/doctors/:id', verifyJWT, async (req, res) => {
+        app.delete('/doctors/:id', async (req, res) => {
             const id = req.params.id;
             const filter = { _id: ObjectId(id) };
             const result = await doctorsCollection.deleteOne(filter);
